@@ -1,0 +1,261 @@
+Data Entry Python Code
+# -*- coding: utf-8 -*-
+"""
+Created on Sun Dec  1 12:23:50 2024
+@authors: Hillary, Gilles
+"""
+
+#!/usr/bin/python 
+import mariadb 
+
+conn = mariadb.connect(
+    user="root",
+    password="",
+    host="localhost",
+    database="hockeyleaguedb")
+cur = conn.cursor() 
+
+#retrieving information 
+cur.execute("SELECT gameID, gameTime, arenaID, homeTeamID, awayTeamID 
+FROM game where gameDate = current_date") 
+print("TODAY'S GAMES: \n")
+for gameID, gameTime, arenaID, homeTeamID, awayTeamID in cur:        
+    print("Game ID, Game Time, Arena ID, Home Team, Away Team")
+    print(f"    {gameID}  , {gameTime} ,    {arenaID}    ,    {homeTeamID}     ,    {awayTeamID} \n")
+   
+#insert information 
+gameID = 0
+gameID = input("Game ID (or 0 if game done): ") 
+while gameID != '0':    
+    playerID = input("Player ID: ")
+    period = input("Period Number: ")
+    periodTime = input("Period Time: ")
+    #stat = input ("Stat (goal, ass): ")
+    goal = input("Goal: ")
+    assist1 = input("Assist #1: ")
+    assist2 = input("Assist #2: ")
+    shot = input("Shot: ")
+    hit = input("Hit: ")
+    penaltyOffense = input("Penalty Offense: ")
+    penaltyLength = input("Penalty Length: ")
+    goalieSave = input("Goalie Save: ")
+  
+
+
+  try: 
+ cur.execute("INSERT INTO player_game_stat (playerID, gameID, period, periodTime, goal, assist1, assist2, shot, hit, penaltyOffense, penaltyLength, goalieSave) VALUES  ('{playerID}', '{gameID}', '{period}', '{periodTime}', '{goal}', '{assist1}', '{assist2}', '{shot}', '{hit}', '{penaltyOffense}', '{penaltyLength}', '{goalieSave}')") 
+    except mariadb.Error as e: 
+        print(f"Error: {e}")
+
+    conn.commit() 
+    print(f"Last Inserted ID: {cur.lastrowid}")
+    gameID = input("\n Enter game ID (or 0 if game done): ")
+
+conn.close()
+
+--Table creation
+create table arena (
+	arenaID		INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	arenaName	VARCHAR(20),
+	location		VARCHAR(20));
+	
+create table benchStaff (
+	staffID		INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	firstName	VARCHAR(20),
+	lastName		VARCHAR(20);
+
+create table official (
+	officialID	INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	firstName	VARCHAR(20),
+	lastName		VARCHAR(20),
+	qualification	VARCHAR(20));
+
+create table team (
+	teamID		INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	teamName		VARCHAR(20),
+	city		VARCHAR(20);
+
+create table game (
+	gameID		INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	gameDate		DATE,
+	gameTime		TIME,
+	arenaID		INT,
+	homeTeamID	INT,
+	awayTeamID	INT,
+	completed	BOOLEAN,
+	foreign key (homeTeamID) references team(teamID),
+	foreign key (awayTeamID) references team(teamID),
+	foreign key (arenaID) references arena(arenaID));
+
+create table official_game (
+	officialID	INT,
+	gameID	 	INT,
+	primary key (officialID, gameID),
+	foreign key (officialID) references official,
+	foreign key (gameID) references game);
+
+create table player (
+	playerID		INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	playerNumber	INT,
+	firstName	VARCHAR(20),
+	lastName		VARCHAR(20),
+	position		VARCHAR(5),
+	shoots		VARCHAR(5),
+	birthdate	DATE,
+	teamID		INT,
+	foreign key (teamID) references team);
+		
+create table benchStaff_team (
+	staffID		INT,
+	teamID		INT,
+	role		VARCHAR(20),
+	check (role in ('coach', 'assistantCoach', 'trainer','manager'))),
+	primary key (staffID,teamID),
+	foreign key (staffID) references benchStaff,
+	foreign key (teamID) references team);
+	
+create table player_game_stat (
+	player_statID	INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	playerID		INT,
+	gameID		INT,
+	period		INT,
+	periodTime	TIME,
+	goal		BOOLEAN,
+	assist1		BOOLEAN,
+	assist2		BOOLEAN,
+	shot		BOOLEAN,
+	hit		BOOLEAN,
+	penaltyOffense	VARCHAR(20),
+	penaltyLength	TIME,
+	goalieSave 	BOOLEAN,
+	foreign key (gameID) references game,
+	foreign key (playerID) references player);
+
+
+--Table Sample Data Population:
+insert into arena(arenaName, location) values ('Cambrian arena', 'Sudbury');
+insert into arena(arenaName, location) values ('Capreol Arena', 'Capreol');
+insert into arena(arenaName, location) values ('Centennial Arena', 'Hanmer');
+insert into arena(arenaName, location) values ('Chelmsford Arena', 'Chelmsford');
+insert into arena(arenaName, location) values ('Memorial Gardens', 'North Bay');
+
+insert into benchStaff(firstName, lastName, role) values ('Reggie', 'Dunlop', 'coach');
+insert into benchStaff(firstName, lastName, role) values ('Murray', 'Chadwick', 'coach');
+insert into benchStaff(firstName, lastName, role) values ('Scottie', 'Bowman', 'coach');
+insert into benchStaff(firstName, lastName, role) values ('Dave', 'Thomas', 'assistantCoach');
+insert into benchStaff(firstName, lastName, role) values ('Jacques', 'Lemaire', 'assistantCoach');
+insert into benchStaff(firstName, lastName, role) values ('Randy', 'Carlyle', 'trainer');
+insert into benchStaff(firstName, lastName, role) values ('Troy', 'Crowder', 'trainer');
+insert into benchStaff(firstName, lastName, role) values ('Mike', 'Foligno', 'manager');
+insert into benchStaff(firstName, lastName, role) values ('Dale', 'Hunter', 'manager');
+
+insert into official(firstName, lastName, qualification) values ('Wes', 'McCauley', 'MHC');
+insert into official(firstName, lastName, qualification) values ('Bill', 'McCreary', 'level 3');
+insert into official(firstName, lastName, qualification) values ('Referee', 'Hannah', 'level 2');
+
+insert into team(teamName, city, coachID) values ('Chemy Cougars', 'Chelmsford');
+insert into team(teamName, city, coachID) values ('Sudbury Sprockets', 'Sudbury');
+
+insert into player(playerNumber, firstName, lastName, position, shoots, birthdate, teamID) values ('1', 'Denis', 'Lemieux', 'G', 'R', '1946-09-06', '1');
+insert into player(playerNumber, firstName, lastName, position, shoots, birthdate, teamID) values ('5', 'Dean', 'Youngblood', 'C', 'R', '1964-03-17', '1');
+insert into player(playerNumber, firstName, lastName, position, shoots, birthdate, teamID) values ('8', 'Derek', 'Sutton', 'RW', 'R', '1952-08-18', '1');
+insert into player(playerNumber, firstName, lastName, position, shoots, birthdate, teamID) values ('67', 'Charlie', 'Conway', 'LW', 'R', '1992-08-08', '1');
+insert into player(playerNumber, firstName, lastName, position, shoots, birthdate, teamID) values ('52', 'Ross', 'Rhea', 'D', 'R', '1995-04-04', '1');
+insert into player(playerNumber, firstName, lastName, position, shoots, birthdate, teamID) values ('99', 'Tree', 'Lane', 'D', 'R', '1974-01-14', '1');
+insert into player(playerNumber, firstName, lastName, position, shoots, birthdate, teamID) values ('31', 'Carey', 'Price', 'G', 'R', '1987-08-16', '2');
+insert into player(playerNumber, firstName, lastName, position, shoots, birthdate, teamID) values ('67', 'Doug', 'Dorsey', 'C', 'R', '1961-11-14', '2');
+insert into player(playerNumber, firstName, lastName, position, shoots, birthdate, teamID) values ('88', 'Steve', 'Hanson', 'RW', 'R', '1999-08-26', '2');
+insert into player(playerNumber, firstName, lastName, position, shoots, birthdate, teamID) values ('65', 'Jack', 'Hanson', 'LW', 'R', '1999-04-12', '2');
+insert into player(playerNumber, firstName, lastName, position, shoots, birthdate, teamID) values ('88', 'Ray', 'Bourque', 'D', 'R', '1960-12-28', '2');
+insert into player(playerNumber, firstName, lastName, position, shoots, birthdate, teamID) values ('44', 'Greg', 'Goldberg', 'D', 'R', '1979-08-27', '2');
+
+insert into game(arenaID, gameTime, gameDate, homeTeamID, awayTeamID, completed) values ('1', '12:00', '2024-11-23', '1', '2', 1);
+insert into game(arenaID, gameTime, gameDate, homeTeamID, awayTeamID, completed) values ('2', '12:00', '2024-11-24', '2', '1', 0);
+
+--created views for frequently queried items
+
+--league_schedule
+create view league_schedule as 
+
+	select	g.gameID as gameID, 
+		g.gameDate as Date, 
+		g.gameTime as Time, 
+		a.arenaName as Arena_Name, 
+		h.teamID as HomeTeamID,
+		h.teamName as Home_Team, 
+		a.teamID as AwayTeamID,
+		a.teamName as Away_Team, 
+		g.completed as Game_Played
+	from game g 
+	join arena a on a.arenaID = g.arenaID
+	join team h on g.homeTeamID = t.teamID
+	join team a on a.awayTeamID = t.teamID;
+
+--game scoring totals
+create view game_score_by_team as
+
+select l.gameID as gameID, t.teamID as teamID, t.teamName as teamName, count(t.teamID) as goals
+from league_schedule l
+join player_game_stat s on s.gameID = l.gameID
+join player p on p.playerID = s.playerID
+join team t on t.teamID = p.teamID
+where s.goal = 1
+group by l.gameID, t.teamID
+
+
+--game results
+create view league_results as
+
+	select	g.gameID as gameID, 
+		g.gameDate as Date, 
+		g.gameTime as Time, 
+		ht.teamID as homeTeamID,
+		ht.teamName as Home_Team, 
+		ht.goals as Home_Team_Score,
+		if(ht.goals = at.goals, "T", if(ht.goals>at.goals,"W","L")) as Home_Team_Result,
+		at.teamID as awayTeamID,
+		at.teamName as Away_Team, 
+   		at.goals as Away_Team_Score
+		if(ht.goals = at.goals, "T", if(ht.goals<at.goals,"W","L")) as Away_Team_Result
+	from game g
+	join game_score_by_team ht on ht.gameID = g.gameID and ht.teamID = g.homeTeamID
+	join game_score_by_team at on at.gameID = g.gameID and at.teamID = g.awayTeamID
+	where g.completed = 1;
+
+--league standings partial
+create view league_standings_partial as 
+
+select 	t.teamID as teamID,		
+		t.teamName as Team, 
+		count(g.gameID) as GP, 
+		count(if(hr.Home_Team_Result="W", 1,0))+count(if(at.Away_Team_Result="W", 1, 0)) as W, 
+		count(if(hr.Home_Team_Result="L", 1, 0))+count(if(at.Away_Team_Result="L", 1, 0)) as L, 
+		count(if(hr.Home_Team_Result = "T", 1, 0))+count(if(at.Away_Team_Result="T", 1, 0)) as T 	
+	from team t
+	join league_results hr on hr.teamID = t.teamID
+	join league_results ar on ar.teamID = t.teamID
+	group by t.teamID;
+
+--league standings
+
+create view league_standings as 
+
+	select row_number () over(order by x.Total_Points desc), z.teamID as TeamID, z.Team as Team, z.GP as GP, z.W as W, x.L as L, x.T as T, Total_Points 
+	from
+	(select x.teamID as teamID, x.Team as Team, x.GP as GP, x.W as W, x.L as L, x.T as T, 2*W+T as Total_Points
+	from league_standings_Partial
+	group by x.teamID) z;
+
+
+--player stats
+create player_stats view as 
+
+	select 	p.playerID, p.lastName +", "+ p.firstName as Player_Name, 
+		count(s.goal = 1) as Goals, 
+		count(s.assist1 = 1 and s.assist2 = 1) as Assists, 
+		sum(s.penaltyLength) as Penalty_Minutes
+	from player p
+	join player_game_stat s 
+	group by playerID
+	order by p.lastName +", "+ p.firstName;
+
